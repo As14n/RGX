@@ -1,3 +1,5 @@
+#pip install prettytable
+
 ignoreDirs = [
     ".git",
     ".vs",
@@ -10,10 +12,10 @@ ignoreExts = [
     "txt",
 ]
 
-from os import walk, path
+from prettytable import PrettyTable
+from os import walk, path, chdir
 from sys import argv
 from multiprocessing import Pool
-from prettytable import PrettyTable      #pip install prettytable
 
 def getLineCount(filePath):
     f = open(filePath)
@@ -22,21 +24,29 @@ def getLineCount(filePath):
     return lineCount
 
 def main():
-    listOfFiles = []
+    sortBy = "FILES"
+    for i in argv:
+        if "-sort:" in i: sortBy = i[6:].upper()
 
-    for root, dirs, files in walk(argv[1]):
+    listOfFiles = []
+    dirCount = 0
+
+    chdir(argv[1])
+    for root, dirs, files in walk("."):
+        gotoTop = False
+        for ignoreDir in ignoreDirs:
+            if(ignoreDir in root):
+                gotoTop = True
+                break
+        if gotoTop: continue
+        dirCount += 1
         for file in files:
             shouldAppend = True
             for ignoreExt in ignoreExts:
                 if(file.endswith(ignoreExt)):
                     shouldAppend = False
                     break
-                if(shouldAppend == False): continue
-                for ignoreDir in ignoreDirs:
-                    if(ignoreDir in root):
-                        shouldAppend = False
-                        break
-            if(shouldAppend): listOfFiles.append(path.join(root, file))
+            if shouldAppend: listOfFiles.append(path.join(root, file))
 
     pool = Pool(processes=4)
     lines = pool.map(getLineCount, listOfFiles)
@@ -50,6 +60,7 @@ def main():
         table.add_row([listOfFiles[x], lines[x]])
         x += 1
     table.align = "l"
-    print(table)
+    table.sortby = sortBy
+    print(table,"\nTotal lines:", sum(lines), "\nFiles:", len(listOfFiles), "\t\tDirectories:", dirCount)
 
 if(__name__ == "__main__"): main()
