@@ -12,10 +12,7 @@ ignoreExts = [
     "txt",
 ]
 
-from prettytable import PrettyTable
-from os import walk, path, chdir
 from sys import argv
-from multiprocessing import Pool
 
 def getLineCount(filePath):
     f = open(filePath)
@@ -23,9 +20,27 @@ def getLineCount(filePath):
     f.close()
     return lineCount
 
+def RenderMDFile(filePath):
+    try: f = open(filePath)
+    except FileNotFoundError: print("Invalid file path:", filePath)
+    else:
+        for line in f:
+            line = line.lstrip("#")
+            line = line.lstrip("`")
+            print(line,end="")
+        f.close()
+
 def main():
+    if argv[1].endswith("md") or argv[1].endswith("MD"):
+        RenderMDFile(argv[1])
+        return
+
+    from prettytable import PrettyTable
+    from os import walk, path, chdir
+    from multiprocessing import Pool
+    
     sortBy = "FILES"
-    for i in argv:
+    for i in argv[2:]:
         if "-sort:" in i: sortBy = i[6:].upper()
 
     listOfFiles = []
